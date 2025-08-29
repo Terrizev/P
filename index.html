@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORMAN OBFUSCATOR</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--primary);
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 10px;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--secondary);
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+        
+        .upload-area.highlight {
+            border-color: var(--success);
+            background-color: rgba(46, 204, 113, 0.1);
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: var(--secondary);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            background: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-obfuscate {
+            background: var(--accent);
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .btn-obfuscate:hover {
+            background: #c0392b;
+        }
+        
+        .btn-download {
+            background: var(--success);
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+            font-size: 1.1rem;
+            display: none;
+        }
+        
+        .btn-download:hover {
+            background: #27ae60;
+        }
+        
+        .settings-list {
+            list-style: none;
+        }
+        
+        .settings-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .settings-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .setting-value {
+            color: #7f8c8d;
+        }
+        
+        .result-area {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .result-area textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-family: monospace;
+            resize: vertical;
+        }
+        
+        .file-info {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left: 4px solid var(--secondary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: var(--success);
+            color: white;
+            border-radius: 5px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 1000;
+        }
+        
+        .code-preview {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .code-header {
+            background: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            font-weight: 600;
+        }
+        
+        .code-content {
+            padding: 15px;
+            background: #f8f9fa;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ORMAN OBFUSCATOR</h1>
+            <p class="tagline">Advanced JavaScript Obfuscation Tool for Node.js</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="card">
+                <h2 class="card-title">Upload & Obfuscate</h2>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <p>Drag & drop your JS/CJS file here<br>or</p>
+                    <button class="btn" id="browseBtn">Browse Files</button>
+                    <input type="file" id="fileInput" class="file-input" accept=".js,.cjs">
+                </div>
+                
+                <div class="file-info" id="fileInfo">
+                    <strong>Selected file:</strong> <span id="fileName"></span>
+                    <br>
+                    <strong>Size:</strong> <span id="fileSize"></span>
+                </div>
+                
+                <div class="code-preview" id="codePreview" style="display: none;">
+                    <div class="code-header">Code Preview</div>
+                    <div class="code-content" id="previewContent"></div>
+                </div>
+                
+                <button class="btn btn-obfuscate" id="obfuscateBtn">Obfuscate Code</button>
+                
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Obfuscating code, please wait...</p>
+                </div>
+                
+                <div class="result-area" id="resultArea">
+                    <h3>Obfuscation Complete!</h3>
+                    <p>Your code has been successfully obfuscated.</p>
+                    <button class="btn btn-download" id="downloadBtn">Download Obfuscated Code</button>
+                    
+                    <div class="code-preview">
+                        <div class="code-header">Obfuscated Code Preview</div>
+                        <div class="code-content" id="obfuscatedContent"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title">Obfuscation Settings</h2>
+                
+                <ul class="settings-list">
+                    <li><span class="setting-name">Target:</span> <span class="setting-value">node</span></li>
+                    <li><span class="setting-name">Preset:</span> <span class="setting-value">high</span></li>
+                    <li><span class="setting-name">Compact:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">Minify:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">Flatten:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">Identifier Generator:</span> <span class="setting-value">Custom function</span></li>
+                    <li><span class="setting-name">Rename Variables:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">Rename Globals:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">String Encoding:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">String Splitting:</span> <span class="setting-value">0.0</span></li>
+                    <li><span class="setting-name">String Concealing:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">String Compression:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">Duplicate Literals Removal:</span> <span class="setting-value">1.0</span></li>
+                    <li><span class="setting-name">Control Flow Flattening:</span> <span class="setting-value">1.0</span></li>
+                    <li><span class="setting-name">Opaque Predicates:</span> <span class="setting-value">0.9</span></li>
+                    <li><span class="setting-name">Dispatcher:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">Calculator:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">Hexadecimal Numbers:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">Moved Declarations:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">Object Extraction:</span> <span class="setting-value">true</span></li>
+                    <li><span class="setting-name">Global Concealing:</span> <span class="setting-value">true</span></li>
+                </ul>
+            </div>
+        </div>
+        
+        <footer>
+            <p>ORMAN OBFUSCATOR &copy; 2023 | Advanced JavaScript protection for Node.js</p>
+        </footer>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const browseBtn = document.getElementById('browseBtn');
+            const obfuscateBtn = document.getElementById('obfuscateBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const loading = document.getElementById('loading');
+            const resultArea = document.getElementById('resultArea');
+            const notification = document.getElementById('notification');
+            const previewContent = document.getElementById('previewContent');
+            const codePreview = document.getElementById('codePreview');
+            const obfuscatedContent = document.getElementById('obfuscatedContent');
+            
+            let currentFile = null;
+            
+            // Browse button click handler
+            browseBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // File input change handler
+            fileInput.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    handleFile(this.files[0]);
+                }
+            });
+            
+            // Drag and drop handlers
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('highlight');
+            });
+            
+            uploadArea.addEventListener('dragleave', function() {
+                uploadArea.classList.remove('highlight');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('highlight');
+                
+                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // Obfuscate button click handler
+            obfuscateBtn.addEventListener('click', function() {
+                if (!currentFile) {
+                    showNotification('Please select a file first', 'error');
+                    return;
+                }
+                
+                // Show loading state
+                loading.style.display = 'block';
+                obfuscateBtn.disabled = true;
+                
+                // Simulate obfuscation process (in a real app, this would be actual obfuscation)
+                setTimeout(function() {
+                    // Hide loading state
+                    loading.style.display = 'none';
+                    obfuscateBtn.disabled = false;
+                    
+                    // Show result area
+                    resultArea.style.display = 'block';
+                    downloadBtn.style.display = 'block';
+                    
+                    // Show obfuscated code preview
+                    obfuscatedContent.textContent = generateObfuscatedCode(previewContent.textContent);
+                    
+                    showNotification('Code obfuscated successfully!', 'success');
+                }, 2000);
+            });
+            
+            // Download button click handler
+            downloadBtn.addEventListener('click', function() {
+                if (!currentFile) return;
+                
+                const obfuscatedCode = generateObfuscatedCode(previewContent.textContent);
+                const blob = new Blob([obfuscatedCode], { type: 'application/javascript' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = currentFile.name.replace('.js', '.obfuscated.js');
+                document.body.appendChild(a);
+                a.click();
+                
+                // Clean up
+                setTimeout(function() {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+                
+                showNotification('File downloaded successfully!', 'success');
+            });
+            
+            // Handle the selected file
+            function handleFile(file) {
+                // Check if file is JS or CJS
+                const validTypes = ['.js', '.cjs'];
+                const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+                
+                if (!validTypes.includes(fileExt)) {
+                    showNotification('Please select a .js or .cjs file', 'error');
+                    return;
+                }
+                
+                currentFile = file;
+                
+                // Display file info
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                fileInfo.style.display = 'block';
+                
+                // Read file content
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    previewContent.textContent = content;
+                    codePreview.style.display = 'block';
+                };
+                reader.readAsText(file);
+                
+                showNotification('File uploaded successfully!', 'success');
+            }
+            
+            // Format file size
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // Show notification
+            function showNotification(message, type) {
+                notification.textContent = message;
+                notification.style.background = type === 'success' ? 'var(--success)' : 'var(--accent)';
+                notification.style.display = 'block';
+                
+                setTimeout(function() {
+                    notification.style.display = 'none';
+                }, 3000);
+            }
+            
+            // Generate obfuscated code (simplified for demo)
+            function generateObfuscatedCode(code) {
+                // This is a simplified obfuscation for demonstration purposes
+                // A real implementation would use the specified settings
+                
+                // Add header comment
+                let obfuscated = `/**\n * ORMAN OBFUSCATOR - Obfuscated code\n * Preset: high\n * Target: node\n */\n\n`;
+                
+                // Simple variable name replacement (demo only)
+                obfuscated += code
+                    .replace(/function\s+(\w+)/g, 'function $1_0x' + Math.random().toString(16).substr(2, 4))
+                    .replace(/const\s+(\w+)/g, 'const $1_0x' + Math.random().toString(16).substr(2, 4))
+                    .replace(/let\s+(\w+)/g, 'let $1_0x' + Math.random().toString(16).substr(2, 4))
+                    .replace(/var\s+(\w+)/g, 'var $1_0x' + Math.random().toString(16).substr(2, 4));
+                
+                return obfuscated;
+            }
+        });
+    </script>
+</body>
+</html>
