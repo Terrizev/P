@@ -247,6 +247,10 @@
             z-index: 1000;
         }
         
+        .notification.error {
+            background: var(--accent);
+        }
+        
         .code-preview {
             margin-top: 20px;
             border: 1px solid #ddd;
@@ -268,6 +272,24 @@
             overflow-y: auto;
             font-family: monospace;
             font-size: 0.9rem;
+            white-space: pre-wrap;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
     </style>
 </head>
@@ -282,25 +304,20 @@
             <div class="card">
                 <h2 class="card-title">Upload & Obfuscate</h2>
                 
-                <div class="upload-area" id="uploadArea">
-                    <div class="upload-icon">📁</div>
-                    <p>Drag & drop your JS/CJS file here<br>or</p>
-                    <button class="btn" id="browseBtn">Browse Files</button>
-                    <input type="file" id="fileInput" class="file-input" accept=".js,.cjs">
-                </div>
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="fileInput">Select JavaScript File (.js or .cjs):</label>
+                        <input type="file" id="fileInput" name="file" accept=".js,.cjs" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-obfuscate" id="obfuscateBtn">Obfuscate Code</button>
+                </form>
                 
                 <div class="file-info" id="fileInfo">
                     <strong>Selected file:</strong> <span id="fileName"></span>
                     <br>
                     <strong>Size:</strong> <span id="fileSize"></span>
                 </div>
-                
-                <div class="code-preview" id="codePreview" style="display: none;">
-                    <div class="code-header">Code Preview</div>
-                    <div class="code-content" id="previewContent"></div>
-                </div>
-                
-                <button class="btn btn-obfuscate" id="obfuscateBtn">Obfuscate Code</button>
                 
                 <div class="loading" id="loading">
                     <div class="spinner"></div>
@@ -310,7 +327,7 @@
                 <div class="result-area" id="resultArea">
                     <h3>Obfuscation Complete!</h3>
                     <p>Your code has been successfully obfuscated.</p>
-                    <button class="btn btn-download" id="downloadBtn">Download Obfuscated Code</button>
+                    <a class="btn btn-download" id="downloadBtn" href="#" download>Download Obfuscated Code</a>
                     
                     <div class="code-preview">
                         <div class="code-header">Obfuscated Code Preview</div>
@@ -357,9 +374,8 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const uploadArea = document.getElementById('uploadArea');
+            const uploadForm = document.getElementById('uploadForm');
             const fileInput = document.getElementById('fileInput');
-            const browseBtn = document.getElementById('browseBtn');
             const obfuscateBtn = document.getElementById('obfuscateBtn');
             const downloadBtn = document.getElementById('downloadBtn');
             const fileInfo = document.getElementById('fileInfo');
@@ -368,123 +384,70 @@
             const loading = document.getElementById('loading');
             const resultArea = document.getElementById('resultArea');
             const notification = document.getElementById('notification');
-            const previewContent = document.getElementById('previewContent');
-            const codePreview = document.getElementById('codePreview');
             const obfuscatedContent = document.getElementById('obfuscatedContent');
-            
-            let currentFile = null;
-            
-            // Browse button click handler
-            browseBtn.addEventListener('click', function() {
-                fileInput.click();
-            });
             
             // File input change handler
             fileInput.addEventListener('change', function(e) {
                 if (this.files && this.files[0]) {
-                    handleFile(this.files[0]);
+                    const file = this.files[0];
+                    
+                    // Display file info
+                    fileName.textContent = file.name;
+                    fileSize.textContent = formatFileSize(file.size);
+                    fileInfo.style.display = 'block';
+                    
+                    showNotification('File selected: ' + file.name, 'success');
                 }
             });
             
-            // Drag and drop handlers
-            uploadArea.addEventListener('dragover', function(e) {
+            // Form submit handler
+            uploadForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                uploadArea.classList.add('highlight');
-            });
-            
-            uploadArea.addEventListener('dragleave', function() {
-                uploadArea.classList.remove('highlight');
-            });
-            
-            uploadArea.addEventListener('drop', function(e) {
-                e.preventDefault();
-                uploadArea.classList.remove('highlight');
                 
-                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    handleFile(e.dataTransfer.files[0]);
-                }
-            });
-            
-            // Obfuscate button click handler
-            obfuscateBtn.addEventListener('click', function() {
-                if (!currentFile) {
+                if (!fileInput.files || !fileInput.files[0]) {
                     showNotification('Please select a file first', 'error');
                     return;
                 }
+                
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
                 
                 // Show loading state
                 loading.style.display = 'block';
                 obfuscateBtn.disabled = true;
                 
-                // Simulate obfuscation process (in a real app, this would be actual obfuscation)
-                setTimeout(function() {
+                try {
+                    const response = await fetch('/obfuscate', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Show result area
+                        resultArea.style.display = 'block';
+                        
+                        // Set download link
+                        downloadBtn.href = data.downloadUrl;
+                        downloadBtn.download = data.filename;
+                        
+                        // Show obfuscated code preview
+                        obfuscatedContent.textContent = data.code;
+                        
+                        showNotification('Code obfuscated successfully!', 'success');
+                    } else {
+                        showNotification('Obfuscation failed: ' + data.error, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showNotification('Error: ' + error.message, 'error');
+                } finally {
                     // Hide loading state
                     loading.style.display = 'none';
                     obfuscateBtn.disabled = false;
-                    
-                    // Show result area
-                    resultArea.style.display = 'block';
-                    downloadBtn.style.display = 'block';
-                    
-                    // Show obfuscated code preview
-                    obfuscatedContent.textContent = generateObfuscatedCode(previewContent.textContent);
-                    
-                    showNotification('Code obfuscated successfully!', 'success');
-                }, 2000);
-            });
-            
-            // Download button click handler
-            downloadBtn.addEventListener('click', function() {
-                if (!currentFile) return;
-                
-                const obfuscatedCode = generateObfuscatedCode(previewContent.textContent);
-                const blob = new Blob([obfuscatedCode], { type: 'application/javascript' });
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = currentFile.name.replace('.js', '.obfuscated.js');
-                document.body.appendChild(a);
-                a.click();
-                
-                // Clean up
-                setTimeout(function() {
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                }, 100);
-                
-                showNotification('File downloaded successfully!', 'success');
-            });
-            
-            // Handle the selected file
-            function handleFile(file) {
-                // Check if file is JS or CJS
-                const validTypes = ['.js', '.cjs'];
-                const fileExt = '.' + file.name.split('.').pop().toLowerCase();
-                
-                if (!validTypes.includes(fileExt)) {
-                    showNotification('Please select a .js or .cjs file', 'error');
-                    return;
                 }
-                
-                currentFile = file;
-                
-                // Display file info
-                fileName.textContent = file.name;
-                fileSize.textContent = formatFileSize(file.size);
-                fileInfo.style.display = 'block';
-                
-                // Read file content
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const content = e.target.result;
-                    previewContent.textContent = content;
-                    codePreview.style.display = 'block';
-                };
-                reader.readAsText(file);
-                
-                showNotification('File uploaded successfully!', 'success');
-            }
+            });
             
             // Format file size
             function formatFileSize(bytes) {
@@ -503,29 +466,17 @@
                 notification.style.background = type === 'success' ? 'var(--success)' : 'var(--accent)';
                 notification.style.display = 'block';
                 
+                if (type === 'error') {
+                    notification.classList.add('error');
+                } else {
+                    notification.classList.remove('error');
+                }
+                
                 setTimeout(function() {
                     notification.style.display = 'none';
                 }, 3000);
             }
-            
-            // Generate obfuscated code (simplified for demo)
-            function generateObfuscatedCode(code) {
-                // This is a simplified obfuscation for demonstration purposes
-                // A real implementation would use the specified settings
-                
-                // Add header comment
-                let obfuscated = `/**\n * ORMAN OBFUSCATOR - Obfuscated code\n * Preset: high\n * Target: node\n */\n\n`;
-                
-                // Simple variable name replacement (demo only)
-                obfuscated += code
-                    .replace(/function\s+(\w+)/g, 'function $1_0x' + Math.random().toString(16).substr(2, 4))
-                    .replace(/const\s+(\w+)/g, 'const $1_0x' + Math.random().toString(16).substr(2, 4))
-                    .replace(/let\s+(\w+)/g, 'let $1_0x' + Math.random().toString(16).substr(2, 4))
-                    .replace(/var\s+(\w+)/g, 'var $1_0x' + Math.random().toString(16).substr(2, 4));
-                
-                return obfuscated;
-            }
         });
     </script>
 </body>
-</html>
+    </html>
